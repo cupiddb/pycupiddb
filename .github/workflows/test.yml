@@ -1,0 +1,35 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Run tests
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .
+          python -m pip install -r requirements-test.txt
+          python -m pytest --cov=pycupiddb --cov-report xml:reports/coverage_result_${{ matrix.python-version }}.xml
+
+    services:
+      cupiddb:
+        image: wiamsuri/cupiddb:v0.1.0
+        ports:
+        - 5995/tcp
