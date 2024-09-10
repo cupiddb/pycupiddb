@@ -110,7 +110,7 @@ class Serializer:
             raise InvalidArrowData()
         raise ValueError()
 
-    def _process_get_response(self, response_type: str, payload: bytes) -> Any:
+    def _process_get_response(self, response_type: str, payload: bytes, default: Optional[Any]) -> Any:
         if response_type == 'AR':
             return self._process_arrow_payload(payload=payload)
         if response_type == 'IN':
@@ -127,6 +127,8 @@ class Serializer:
         assert response_type == 'ER'
         error_code = struct.unpack('>H', payload)[0]
         if error_code == 2:
+            if default is not None:
+                return default
             return None
         if error_code == 5:
             raise InvalidDataType()

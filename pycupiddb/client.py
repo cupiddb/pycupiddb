@@ -36,8 +36,8 @@ class CupidClient(SyncCommand):
         return self._get_dataframe(key=key, columns=columns, filter_operation=filter_operation,
                                    result_cache_timeout=result_cache_timeout, filters=filters)
 
-    def get(self, key: str) -> Optional[Any]:
-        return self._get(key=key)
+    def get(self, key: str, default: Optional[Any] = None) -> Optional[Any]:
+        return self._get(key=key, default=default)
 
     def delete(self, key: str) -> bool:
         return self._delete(key=key)
