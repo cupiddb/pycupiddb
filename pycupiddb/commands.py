@@ -45,7 +45,6 @@ class SyncCommand(SyncConnection, Serializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-
     def _set_record_batch(self, key: str, value: pd.DataFrame, timeout: float) -> bool:
         record_barch = pa.record_batch(value)
 
@@ -108,13 +107,13 @@ class SyncCommand(SyncConnection, Serializer):
         response_type, payload = self.send_command(message_type='GA', payload=payload)
         return self._process_get_dataframe_response(response_type=response_type, payload=payload)
 
-    def _get(self, key: str) -> Optional[Any]:
+    def _get(self, key: str, default: Optional[Any]) -> Optional[Any]:
         key_bytes = key.encode()
         key_len = len(key)
         assert key_len < 65536
 
         response_type, payload = self.send_command(message_type='GD', payload=key_bytes)
-        return self._process_get_response(response_type=response_type, payload=payload)
+        return self._process_get_response(response_type=response_type, payload=payload, default=default)
 
     def _delete(self, key: str) -> bool:
         key_bytes = key.encode()

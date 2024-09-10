@@ -47,6 +47,12 @@ class TestClient:
         assert get_data is None
         assert delete_success
 
+        get_data = self.client.get(key=data_key, default='default')
+        assert get_data == 'default'
+
+        get_data = self.client.get(key=data_key, default=dict())
+        assert get_data == dict()
+
     def test_set_with_timeout(self):
         key = 'test_timeout_key'
         self.client.set(key=key, value=self.test_df, timeout=0.5)
