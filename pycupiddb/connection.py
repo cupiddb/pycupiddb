@@ -90,16 +90,7 @@ class Serializer:
     def _process_get_dataframe_response(self, response_type: str,
                                         payload: bytes) -> Optional[pd.DataFrame]:
         if response_type == 'AR':
-            # NOTE: The original type is unsigned.
-            metadata_len = struct.unpack('>I', payload[:4])[0]
-            metadata = None
-
-            if metadata_len > 0:
-                metadata = json.loads(payload[4:metadata_len+4].decode())
-
-            arrow_payload = payload[metadata_len+4:]
-            return self._process_arrow_payload(payload=arrow_payload,
-                                               metadata=metadata)
+            return self._process_arrow_payload(payload=payload)
         assert response_type == 'ER'
         error_code = struct.unpack('>H', payload)[0]
         if error_code == 2:
@@ -137,7 +128,7 @@ class Serializer:
     def _process_arrow_payload(self, payload: bytes,
                                metadata: Optional[dict] = None) -> pd.DataFrame:
         buffer_reader = pa.BufferReader(memoryview(payload))
-        reader = pa.ipc.RecordBatchStreamReader(buffer_reader)
+        reader = pa.ipc.RecordBatchStreamReader(buffer_reader, options=None)
         dfs = []
         for record_batch in reader:
             if metadata:

@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Literal
 import pandas as pd
 
 from .commands import SyncCommand, RowFilter
@@ -29,7 +29,7 @@ class CupidClient(SyncCommand):
         self,
         key: str,
         columns: List[str] = [],
-        filter_operation: str = 'AND',
+        filter_operation: Literal['AND', 'OR'] = 'AND',
         result_cache_timeout: float = 0.0,
         filters: List[RowFilter] = []
     ) -> Optional[pd.DataFrame]:
