@@ -1,5 +1,10 @@
 # CupidDB Python Client
 
+## Run an instance of CupidDB
+```bash
+docker run --rm -p 5995:5995 wiamsuri/cupiddb:v0.2.0
+```
+
 ## Installation
 ```bash
 pip install pycupiddb
