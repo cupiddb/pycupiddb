@@ -1,3 +1,4 @@
+import os
 from datetime import date
 
 from pycupiddb import CupidClient, RowFilter
@@ -9,7 +10,9 @@ class TestClient:
 
     @classmethod
     def setup_class(cls):
-        cls.client = CupidClient(host='localhost', port=5995)
+        cupiddb_host = os.getenv('CUPIDDB_TEST_HOST', 'localhost')
+        cupiddb_port = int(os.getenv('CUPIDDB_TEST_PORT', '5995'))
+        cls.client = CupidClient(host=cupiddb_host, port=cupiddb_port)
         cls.test_df = create_df()
 
     @classmethod
