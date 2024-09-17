@@ -30,6 +30,6 @@ jobs:
 
     services:
       cupiddb:
-        image: wiamsuri/cupiddb:v0.1.0
+        image: wiamsuri/cupiddb:v0.2.0
         ports:
         - 5995/tcp
