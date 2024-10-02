@@ -93,14 +93,15 @@ class SyncCommand(SyncConnection, Serializer):
         return self._process_incr_float(response_type, payload)
 
     def _get_dataframe(self, key: str, columns: List[str] = [], filter_operation: str = 'AND',
-                       result_cache_timeout: float = 0.0,
-                       filters: List[RowFilter] = []) -> Optional[pd.DataFrame]:
+                       filters: List[RowFilter] = [], result_cache_timeout: float = 0.0,
+                       compression_type: Literal['', 'lz4', 'zstd'] = '') -> Optional[pd.DataFrame]:
         query_dict = {
             'key': key,
             'columns': columns,
             'filterlogic': filter_operation,
             'filter': [rf.query_dict for rf in filters],
             'cachetime': int(result_cache_timeout * 1000),
+            'compression_type': compression_type,
         }
         payload = json.dumps(query_dict, separators=(',', ':')).encode()
 
