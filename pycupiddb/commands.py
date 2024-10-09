@@ -12,32 +12,41 @@ from .connection import SyncConnection, Serializer
 class RowFilter():
 
     def __init__(self, column: str, logic: Literal['gte', 'gt', 'lte', 'lt', 'eq', 'ne'],
-                 value: Any, data_type: Literal['int', 'float', 'date', 'datetime']):
+                 value: Any, data_type: Literal['int', 'float', 'date',
+                                                'datetime', 'string', 'bool']):
         assert isinstance(column, str)
         assert logic in ['gte', 'gt', 'lte', 'lt', 'eq', 'ne']
-        assert data_type in ['int', 'float', 'date', 'datetime']
-
-        if data_type == 'int':
-            assert isinstance(value, int)
-            cupid_data_type = 'IN'
-        elif data_type == 'float':
-            assert isinstance(value, float)
-            cupid_data_type = 'FL'
-        elif data_type == 'date':
-            assert isinstance(value, date)
-            cupid_data_type = 'DA'
-            value = (value - date(1970, 1, 1)).days
-        elif data_type == 'datetime':
-            assert isinstance(value, datetime)
-            cupid_data_type = 'DT'
-            value = value.timestamp() * (10**9)
-
+        assert data_type in ['int', 'float', 'date', 'datetime', 'string', 'bool']
         self.query_dict = {
             'col': column,
             'filter_type': logic,
-            'data_type': cupid_data_type,
-            'value': value,
         }
+
+        if data_type == 'int':
+            assert isinstance(value, int)
+            self.query_dict['data_type'] = 'IN'
+            self.query_dict['value_int'] = value
+        elif data_type == 'float':
+            assert isinstance(value, float)
+            self.query_dict['data_type'] = 'FL'
+            self.query_dict['value_flt'] = value
+        elif data_type == 'date':
+            assert isinstance(value, date)
+            self.query_dict['data_type'] = 'DA'
+            self.query_dict['value_int'] = (value - date(1970, 1, 1)).days
+        elif data_type == 'datetime':
+            assert isinstance(value, datetime)
+            self.query_dict['data_type'] = 'DT'
+            self.query_dict['value_int'] = int(value.timestamp() * (10**9))
+        elif data_type == 'string':
+            assert isinstance(value, str)
+            self.query_dict['data_type'] = 'ST'
+            self.query_dict['value_str'] = value
+        elif data_type == 'bool':
+            assert isinstance(value, bool)
+            assert logic == 'eq'
+            self.query_dict['data_type'] = 'BL'
+            self.query_dict['value_bol'] = value
 
 
 class SyncCommand(SyncConnection, Serializer):
@@ -93,14 +102,15 @@ class SyncCommand(SyncConnection, Serializer):
         return self._process_incr_float(response_type, payload)
 
     def _get_dataframe(self, key: str, columns: List[str] = [], filter_operation: str = 'AND',
-                       result_cache_timeout: float = 0.0,
-                       filters: List[RowFilter] = []) -> Optional[pd.DataFrame]:
+                       filters: List[RowFilter] = [], result_cache_timeout: float = 0.0,
+                       compression_type: Literal['', 'lz4', 'zstd'] = '') -> Optional[pd.DataFrame]:
         query_dict = {
             'key': key,
             'columns': columns,
             'filterlogic': filter_operation,
             'filter': [rf.query_dict for rf in filters],
             'cachetime': int(result_cache_timeout * 1000),
+            'compression_type': compression_type,
         }
         payload = json.dumps(query_dict, separators=(',', ':')).encode()
 
