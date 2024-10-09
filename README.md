@@ -2,7 +2,7 @@
 
 ## Run an instance of CupidDB
 ```bash
-docker run --rm -p 5995:5995 wiamsuri/cupiddb:v0.2.0
+docker run --rm -p 5995:5995 wiamsuri/cupiddb:v0.4.0
 ```
 
 ## Installation
