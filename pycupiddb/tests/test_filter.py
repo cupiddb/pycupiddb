@@ -1,7 +1,7 @@
 import os
 import random
 import string
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 
 from pycupiddb import CupidClient, RowFilter
 from pycupiddb.tests.utils import create_df
@@ -81,7 +81,8 @@ class TestClient:
 
         # Test datetime filter
         filters = [
-            RowFilter(column='datetime', logic='gt', value=datetime(2000, 1, 5), data_type='datetime'),
+            RowFilter(column='datetime', logic='gt',
+                      value=datetime(2000, 1, 5, tzinfo=timezone.utc), data_type='datetime'),
         ]
         filtered_df = self.client.get_dataframe(key=key_2, filters=filters)
         python_filtered = self.test_df_2[self.test_df_2.index > datetime(2000, 1, 5)]

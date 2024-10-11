@@ -30,11 +30,13 @@ class CupidClient(SyncCommand):
         key: str,
         columns: List[str] = [],
         filter_operation: Literal['AND', 'OR'] = 'AND',
+        filters: List[RowFilter] = [],
         result_cache_timeout: float = 0.0,
-        filters: List[RowFilter] = []
+        compression_type: Literal['', 'lz4', 'zstd'] = ''
     ) -> Optional[pd.DataFrame]:
         return self._get_dataframe(key=key, columns=columns, filter_operation=filter_operation,
-                                   result_cache_timeout=result_cache_timeout, filters=filters)
+                                   filters=filters, result_cache_timeout=result_cache_timeout,
+                                   compression_type=compression_type)
 
     def get(self, key: str, default: Optional[Any] = None) -> Optional[Any]:
         return self._get(key=key, default=default)
