@@ -9,7 +9,7 @@ from typing import Tuple, Optional, Any
 from threading import Lock
 
 from .exceptions import InvalidDataType, InvalidDataType, InvalidQuery, \
-    InvalidArrowData, InvalidPickleData
+    InvalidArrowData, InvalidPickleData, ProtocolVersionError
 
 
 class Serializer:
@@ -21,7 +21,7 @@ class Serializer:
         error_code = struct.unpack('>H', payload)[0]
         if error_code == 1:
             raise ValueError()
-        raise ValueError()
+        self._general_handle_error_code(error_code)
 
     def _process_incr(self, response_type: str, payload: bytes) -> int:
         if response_type == 'IN':
@@ -31,7 +31,7 @@ class Serializer:
         error_code = struct.unpack('>H', payload)[0]
         if error_code == 5:
             raise InvalidDataType()
-        raise ValueError()
+        self._general_handle_error_code(error_code)
 
     def _process_incr_float(self, response_type: str, payload: bytes) -> float:
         if response_type == 'FL':
@@ -41,7 +41,7 @@ class Serializer:
         error_code = struct.unpack('>H', payload)[0]
         if error_code == 5:
             raise InvalidDataType()
-        raise ValueError()
+        self._general_handle_error_code(error_code)
 
     def _process_delete(self, response_type: str, payload: bytes) -> bool:
         if response_type == 'OK':
@@ -50,14 +50,14 @@ class Serializer:
         error_code = struct.unpack('>H', payload)[0]
         if error_code == 2:
             return False
-        raise ValueError()
+        self._general_handle_error_code(error_code)
 
     def _process_delete_many(self, response_type: str, payload: bytes) -> int:
         if response_type == 'DM':
             deleted_count = struct.unpack('>H', payload)[0]
             return deleted_count
         error_code = struct.unpack('>H', payload)[0]
-        raise ValueError()
+        self._general_handle_error_code(error_code)
 
     def _process_touch_response(self, response_type: str, payload: bytes) -> bool:
         if response_type == 'OK':
@@ -66,7 +66,7 @@ class Serializer:
         error_code = struct.unpack('>H', payload)[0]
         if error_code == 2:
             return False
-        raise ValueError()
+        self._general_handle_error_code(error_code)
 
     def _process_ttl_response(self, response_type: str, payload: bytes) -> Optional[float]:
         if response_type == 'TL':
@@ -76,7 +76,7 @@ class Serializer:
         error_code = struct.unpack('>H', payload)[0]
         if error_code == 2:
             return None
-        raise ValueError()
+        self._general_handle_error_code(error_code)
 
     def _process_keys_response(self, response_type: str, payload: bytes) -> list:
         if response_type == 'KY':
@@ -85,7 +85,7 @@ class Serializer:
             return [key.decode() for key in payload.split(b'\x00')]
         assert response_type == 'ER'
         error_code = struct.unpack('>H', payload)[0]
-        raise ValueError()
+        self._general_handle_error_code(error_code)
 
     def _process_get_dataframe_response(self, response_type: str,
                                         payload: bytes) -> Optional[pd.DataFrame]:
@@ -99,7 +99,7 @@ class Serializer:
             raise InvalidQuery()
         if error_code == 4:
             raise InvalidArrowData()
-        raise ValueError()
+        self._general_handle_error_code(error_code)
 
     def _process_get_response(self, response_type: str, payload: bytes, default: Optional[Any]) -> Any:
         if response_type == 'AR':
@@ -123,7 +123,7 @@ class Serializer:
             return None
         if error_code == 5:
             raise InvalidDataType()
-        raise ValueError()
+        self._general_handle_error_code(error_code)
 
     def _process_arrow_payload(self, payload: bytes,
                                metadata: Optional[dict] = None) -> pd.DataFrame:
@@ -135,6 +135,11 @@ class Serializer:
                 record_batch = record_batch.replace_schema_metadata(metadata)
             dfs.append(record_batch.to_pandas())
         return pd.concat(dfs)
+
+    def _general_handle_error_code(self, error_code):
+        if error_code == 6:
+            raise ProtocolVersionError('Please check the client version and the server version')
+        raise ValueError('Unknown error')
 
 
 class SyncConnection:

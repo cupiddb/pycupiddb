@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        python-version: ['3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12']
 
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +30,6 @@ jobs:
 
     services:
       cupiddb:
-        image: wiamsuri/cupiddb:v0.4.0
+        image: cupiddb/cupiddb:v1.0.0
         ports:
-        - 5995/tcp
+        - 5995:5995

@@ -12,3 +12,7 @@ class InvalidDataType(Exception):
 
 class InvalidQuery(Exception):
     pass
+
+
+class ProtocolVersionError(Exception):
+    pass
