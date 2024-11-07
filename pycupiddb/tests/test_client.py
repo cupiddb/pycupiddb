@@ -21,10 +21,9 @@ class TestClient:
     def test_set_get_delete(self):
         df_key = 'test_df_key'
         data_key = 'test_data_key'
+        self.client.delete(key=df_key)
         df = self.client.get_dataframe(key=df_key)
-        delete_success = self.client.delete(key=df_key)
         assert df is None
-        assert not delete_success
 
         self.client.set(key=df_key, value=self.test_df)
         df = self.client.get_dataframe(key=df_key)
@@ -55,6 +54,33 @@ class TestClient:
 
         get_data = self.client.get(key=data_key, default=dict())
         assert get_data == dict()
+
+    def test_haskey_add_get(self):
+        key = 'test_add_get_key'
+        self.client.delete(key=key)
+        has_key = self.client.has_key(key=key)
+        assert not has_key
+
+        success_add = self.client.add(key=key, value='1')
+        assert success_add
+        has_key = self.client.has_key(key=key)
+        assert has_key
+
+        result = self.client.get(key=key)
+        assert result == '1'
+
+        success_add = self.client.add(key=key, value='2')
+        assert not success_add
+        result = self.client.get(key=key)
+        assert result == '1'
+        self.client.set(key=key, value='2')
+        result = self.client.get(key=key)
+        assert result == '2'
+
+        delete_success = self.client.delete(key=key)
+        assert delete_success
+        delete_success = self.client.delete(key=key)
+        assert not delete_success
 
     def test_set_with_timeout(self):
         key = 'test_timeout_key'
@@ -138,3 +164,14 @@ class TestClient:
         for i in range(5):
             val = self.client.get(key=f'{key_prefix}_{i}')
             assert val is None
+
+    def test_flush(self):
+        for i in range(5):
+            self.client.set(key=f'flush_{i}', value=i)
+
+        key_list = self.client.keys()
+        assert len(key_list) > 0
+
+        self.client.flush()
+        key_list = self.client.keys()
+        assert len(key_list) == 0
