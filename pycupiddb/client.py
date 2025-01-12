@@ -67,8 +67,8 @@ class CupidClient(SyncCommand):
     def has_key(self, key: str) -> bool:
         return self._has_key(key=key)
 
-    def keys(self) -> list:
-        return self._keys()
+    def keys(self, pattern: Optional[str] = None) -> list:
+        return self._keys(pattern)
 
     def flush(self):
         return self._flush()

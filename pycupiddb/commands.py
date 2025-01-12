@@ -174,8 +174,11 @@ class SyncCommand(SyncConnection, Serializer):
         response_type, payload = self.send_command(message_type='HK', payload=key_bytes)
         return self._process_has_key_response(response_type, payload)
 
-    def _keys(self) -> list:
-        response_type, payload = self.send_command(message_type='LS', payload=bytearray())
+    def _keys(self, pattern: Optional[str]) -> list:
+        if pattern is None:
+            response_type, payload = self.send_command(message_type='LS', payload=bytearray())
+        else:
+            response_type, payload = self.send_command(message_type='LS', payload=pattern.encode())
         return self._process_keys_response(response_type, payload)
 
     def _flush(self):

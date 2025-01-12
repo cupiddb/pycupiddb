@@ -108,6 +108,12 @@ class TestClient:
         ttl_seconds = self.client.ttl(key=key)
         assert ttl_seconds <= 9 and ttl_seconds >= 8
 
+        self.client.touch(key=key, timeout=0)
+        ttl_seconds = self.client.ttl(key=key)
+        assert ttl_seconds == 0
+        df = self.client.get_dataframe(key=key)
+        assert self.test_df.equals(df)
+
     def test_ttl(self):
         key = 'test_ttl_key'
         ttl_seconds = self.client.ttl(key=key)
@@ -139,6 +145,15 @@ class TestClient:
         new_keys_list = self.client.keys()
 
         assert (set(new_keys_list) - set(keys_list)) == set([key])
+
+        glob_keys_list = self.client.keys(pattern='additional_*')
+        assert set(glob_keys_list) == {'additional_key'}
+        glob_keys_list = self.client.keys(pattern='additi*key')
+        assert set(glob_keys_list) == {'additional_key'}
+        glob_keys_list = self.client.keys(pattern='additiona{k,l}_key')
+        assert set(glob_keys_list) == {'additional_key'}
+        glob_keys_list = self.client.keys(pattern='additional__*')
+        assert len(glob_keys_list) == 0
 
     def test_delete_many(self):
         key_prefix = 'many_keys'
