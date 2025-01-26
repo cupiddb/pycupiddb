@@ -30,6 +30,6 @@ jobs:
 
     services:
       cupiddb:
-        image: cupiddb/cupiddb:v1.0.0
+        image: cupiddb/cupiddb:v1.1.0
         ports:
         - 5995:5995

@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Literal
+from typing import Any, List, Optional, Literal, Union
 import pandas as pd
 
 from .commands import SyncCommand, RowFilter
@@ -6,18 +6,29 @@ from .commands import SyncCommand, RowFilter
 
 class CupidClient(SyncCommand):
 
-    def __init__(self, host: str, port: int):
-        super().__init__(host=host, port=port)
+    def __init__(self, host: str, port: Union[int, str]):
+        port_number = int(port) if isinstance(port, str) else port
+        super().__init__(host=host, port=port_number)
 
     def set(self, key: str, value: Any, timeout: float = 0.0):
         if isinstance(value, pd.DataFrame):
-            self._set_record_batch(key=key, value=value, timeout=timeout)
+            self._set_record_batch(key=key, value=value, timeout=timeout, add_only=False)
         elif isinstance(value, int):
-            self._set_int(key=key, value=value, timeout=timeout)
+            self._set_int(key=key, value=value, timeout=timeout, add_only=False)
         elif isinstance(value, float):
-            self._set_float(key=key, value=value, timeout=timeout)
+            self._set_float(key=key, value=value, timeout=timeout, add_only=False)
         else:
-            self._set_pickle(key=key, value=value, timeout=timeout)
+            self._set_pickle(key=key, value=value, timeout=timeout, add_only=False)
+
+    def add(self, key: str, value: Any, timeout: float = 0.0) -> bool:
+        if isinstance(value, pd.DataFrame):
+            return self._set_record_batch(key=key, value=value, timeout=timeout, add_only=True)
+        elif isinstance(value, int):
+            return self._set_int(key=key, value=value, timeout=timeout, add_only=True)
+        elif isinstance(value, float):
+            return self._set_float(key=key, value=value, timeout=timeout, add_only=True)
+        else:
+            return self._set_pickle(key=key, value=value, timeout=timeout, add_only=True)
 
     def incr(self, key: str, delta: int = 1) -> int:
         return self._incr(key=key, delta=delta)
@@ -53,5 +64,11 @@ class CupidClient(SyncCommand):
     def ttl(self, key: str) -> Optional[float]:
         return self._ttl(key=key)
 
-    def keys(self) -> list:
-        return self._keys()
+    def has_key(self, key: str) -> bool:
+        return self._has_key(key=key)
+
+    def keys(self, pattern: Optional[str] = None) -> list:
+        return self._keys(pattern)
+
+    def flush(self):
+        return self._flush()

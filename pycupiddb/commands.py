@@ -2,7 +2,7 @@ import json
 import struct
 import pickle
 from datetime import date, datetime
-from typing import Any, List, Literal, Optional
+from typing import Any, List, Dict, Literal, Optional
 import pyarrow as pa
 import pandas as pd
 
@@ -17,7 +17,7 @@ class RowFilter():
         assert isinstance(column, str)
         assert logic in ['gte', 'gt', 'lte', 'lt', 'eq', 'ne']
         assert data_type in ['int', 'float', 'date', 'datetime', 'string', 'bool']
-        self.query_dict = {
+        self.query_dict: Dict[str, Any] = {
             'col': column,
             'filter_type': logic,
         }
@@ -54,7 +54,7 @@ class SyncCommand(SyncConnection, Serializer):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def _set_record_batch(self, key: str, value: pd.DataFrame, timeout: float) -> bool:
+    def _set_record_batch(self, key: str, value: pd.DataFrame, timeout: float, add_only: bool) -> bool:
         record_barch = pa.record_batch(value)
 
         sink = pa.BufferOutputStream()
@@ -63,21 +63,26 @@ class SyncCommand(SyncConnection, Serializer):
         record_batch_buffer = sink.getvalue()
         rb_payload = record_batch_buffer.to_pybytes()
 
-        return self._set_data(data_type='A', key=key, byte_data=rb_payload, timeout=timeout)
+        return self._set_data(data_type='A', key=key, byte_data=rb_payload,
+                              timeout=timeout, add_only=add_only)
 
-    def _set_int(self, key: str, value: int, timeout: float):
+    def _set_int(self, key: str, value: int, timeout: float, add_only: bool) -> bool:
         payload = struct.pack('>q', value)
-        return self._set_data(data_type='I', key=key, byte_data=payload, timeout=timeout)
+        return self._set_data(data_type='I', key=key, byte_data=payload,
+                              timeout=timeout, add_only=add_only)
 
-    def _set_float(self, key: str, value: float, timeout: float):
+    def _set_float(self, key: str, value: float, timeout: float, add_only: bool) -> bool:
         payload = struct.pack('>d', value)
-        return self._set_data(data_type='F', key=key, byte_data=payload, timeout=timeout)
+        return self._set_data(data_type='F', key=key, byte_data=payload,
+                              timeout=timeout, add_only=add_only)
 
-    def _set_pickle(self, key: str, value: Any, timeout: float):
-        return self._set_data(data_type='B', key=key, byte_data=pickle.dumps(value), timeout=timeout)
+    def _set_pickle(self, key: str, value: Any, timeout: float, add_only: bool) -> bool:
+        return self._set_data(data_type='B', key=key, byte_data=pickle.dumps(value),
+                              timeout=timeout, add_only=add_only)
 
-    def _set_data(self, data_type: str, key: str, byte_data: bytes, timeout: float) -> bool:
+    def _set_data(self, data_type: str, key: str, byte_data: bytes, timeout: float, add_only: bool) -> bool:
         cache_time_bytes = struct.pack('>Q', int(timeout * 1000))
+        add_only_bytes = struct.pack('?', add_only)
 
         key_bytes = key.encode()
         key_len = len(key_bytes)
@@ -87,7 +92,8 @@ class SyncCommand(SyncConnection, Serializer):
         assert data_type in ['A', 'B', 'I', 'F']
         data_type_byte = data_type.encode()
 
-        payload = cache_time_bytes + key_length_bytes + key_bytes + data_type_byte + byte_data
+        payload = cache_time_bytes + add_only_bytes + key_length_bytes + key_bytes + \
+                  data_type_byte + byte_data
         response_type, payload = self.send_command(message_type='SD', payload=payload)
         return self._process_set_data(response_type, payload)
 
@@ -160,6 +166,21 @@ class SyncCommand(SyncConnection, Serializer):
         response_type, payload = self.send_command(message_type='TL', payload=key_bytes)
         return self._process_ttl_response(response_type, payload)
 
-    def _keys(self) -> list:
-        response_type, payload = self.send_command(message_type='LS', payload=bytearray())
+    def _has_key(self, key: str) -> bool:
+        key_bytes = key.encode()
+        key_len = len(key)
+        assert key_len < 65536
+
+        response_type, payload = self.send_command(message_type='HK', payload=key_bytes)
+        return self._process_has_key_response(response_type, payload)
+
+    def _keys(self, pattern: Optional[str]) -> list:
+        if pattern is None:
+            response_type, payload = self.send_command(message_type='LS', payload=bytearray())
+        else:
+            response_type, payload = self.send_command(message_type='LS', payload=pattern.encode())
         return self._process_keys_response(response_type, payload)
+
+    def _flush(self):
+        response_type, payload = self.send_command(message_type='FU', payload=bytearray())
+        return self._process_flush_response(response_type, payload)
