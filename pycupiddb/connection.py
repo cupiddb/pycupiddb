@@ -1,6 +1,6 @@
 import socket
 import struct
-import json
+import time
 import pyarrow as pa
 import pandas as pd
 import pickle
@@ -9,7 +9,7 @@ from typing import Tuple, Optional, Any
 from threading import Lock
 
 from .exceptions import InvalidDataType, InvalidDataType, InvalidQuery, \
-    InvalidArrowData, InvalidPickleData, ProtocolVersionError
+    InvalidArrowData, InvalidPickleData, ProtocolVersionError, ConnectionError
 
 
 class Serializer:
@@ -167,6 +167,8 @@ class SyncConnection:
         port: int,
         kb_chunk: int = 64,
         socket_no_delay: bool = True,
+        max_retries: int = 3,
+        retry_delay: float = 1.0
     ):
         self.protocol_version = 'B'.encode()
         self.host = host
@@ -179,10 +181,25 @@ class SyncConnection:
 
         self.sock = sock
         self.chunk_size = 1024 * kb_chunk
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
         self.connect()
 
     def connect(self):
-        self.sock.connect((self.host, self.port))
+        attempts = 0
+        last_error: Optional[Exception] = None
+
+        while attempts < self.max_retries:
+            try:
+                self.sock.connect((self.host, self.port))
+                return
+            except socket.error as e:
+                last_error = e
+                attempts += 1
+                if attempts < self.max_retries:
+                    time.sleep(self.retry_delay)
+
+        raise ConnectionError(f"Failed to connect after {self.max_retries} attempts") from last_error
 
     def close(self):
         self.sock.close()
