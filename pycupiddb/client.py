@@ -6,9 +6,9 @@ from .commands import SyncCommand, RowFilter
 
 class CupidClient(SyncCommand):
 
-    def __init__(self, host: str, port: Union[int, str]):
+    def __init__(self, host: str, port: Union[int, str], **kwargs):
         port_number = int(port) if isinstance(port, str) else port
-        super().__init__(host=host, port=port_number)
+        super().__init__(host=host, port=port_number, **kwargs)
 
     def set(self, key: str, value: Any, timeout: float = 0.0):
         if isinstance(value, pd.DataFrame):

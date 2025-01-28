@@ -189,14 +189,14 @@ class SyncConnection:
         attempts = 0
         last_error: Optional[Exception] = None
 
-        while attempts < self.max_retries:
+        while attempts <= self.max_retries:
             try:
                 self.sock.connect((self.host, self.port))
                 return
             except socket.error as e:
                 last_error = e
                 attempts += 1
-                if attempts < self.max_retries:
+                if attempts <= self.max_retries:
                     time.sleep(self.retry_delay)
 
         raise ConnectionError(f"Failed to connect after {self.max_retries} attempts") from last_error

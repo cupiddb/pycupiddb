@@ -1,6 +1,6 @@
 [project]
 name = "pycupiddb"
-version = "1.4.0"
+version = "1.4.1"
 description = "Python client for CupidDB"
 authors = [{ name = "Watt Iamsuri", email = "wiamsuri@gmail.com" }]
 readme = "README.md"
